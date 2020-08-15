@@ -29,11 +29,10 @@ def calculate_LJ(r_ij):
     r12_term = math.pow(r6_term,2)
     
     pairwise_energy = 4 * (r12_term - r6_term)
-    #ax.plot(r_ij,pairwise_energy,'ob')
     
     return pairwise_energy
 
-######################################################################################################################
+
 
 def calculate_distance(coord1,coord2,box_length=None):
     """
@@ -72,7 +71,7 @@ def calculate_distance(coord1,coord2,box_length=None):
     
     return distance
 
-######################################################################################################################
+
 
 def calculate_tail_correction(cutoff, box_length, num_atoms):
     """
@@ -108,7 +107,7 @@ def calculate_tail_correction(cutoff, box_length, num_atoms):
     
     return tail_co_LJ
 
-######################################################################################################################
+
 
 def calculate_total_energy(coordinates, cutoff=3, box_length=None):
     """
@@ -138,7 +137,6 @@ def calculate_total_energy(coordinates, cutoff=3, box_length=None):
     for i in range(num_atoms):
         for j in range(i+1,num_atoms):
             
-            # print(F'Comparing atom number {i} with atom number {j}')
             
             dist_ij = calculate_distance(coordinates[i], coordinates[j], box_length)
             
@@ -148,7 +146,7 @@ def calculate_total_energy(coordinates, cutoff=3, box_length=None):
             
     return total_energy
 
-######################################################################################################################
+
 
 def read_xyz(filepath):
     """
@@ -185,7 +183,7 @@ def read_xyz(filepath):
     
     return atomic_coordinates, box_length
 
-######################################################################################################################
+
 
 def accept_or_reject(delta_e, beta):
     """
@@ -219,7 +217,7 @@ def accept_or_reject(delta_e, beta):
             
     return accept
 
-######################################################################################################################
+
 
 def calculate_pair_energy(coordinates, i_particle, box_length, cutoff):
     """
@@ -263,7 +261,7 @@ def calculate_pair_energy(coordinates, i_particle, box_length, cutoff):
     
     return e_total
 
-######################################################################################################################
+
 
 def initial_config(box_volume, num_particles):
     """
@@ -307,7 +305,7 @@ def initial_config(box_volume, num_particles):
     
     return box_length, coordinates
 
-######################################################################################################################
+
 
 def run_simulation(coordinates, box_length, cutoff, reduced_temperature, num_steps, max_displacement = 0.1, freq = 1000):
     """
@@ -322,7 +320,11 @@ def run_simulation(coordinates, box_length, cutoff, reduced_temperature, num_ste
 
 
     # Calculate based on the inputs
-    total_energy = calculate_total_energy(coordinates, cutoff, box_length)
+    try:
+        total_energy = calculate_total_energy(coordinates, cutoff, box_length)
+    except ZeroDivisionError:
+        raise ZeroDivisionError("Infinite energy calculated - particles overlapping! Halting MC simulation.")
+
     total_energy += calculate_tail_correction(cutoff, box_length, num_particles)
 
     for step in range(num_steps):
