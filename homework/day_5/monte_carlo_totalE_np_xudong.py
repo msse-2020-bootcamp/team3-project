@@ -1,22 +1,12 @@
 """
-<<<<<<< HEAD
-Functions for running a Monte Carlo Simulation
-"""
-
-import math
-import random
-import os
-
-from .energy import *
-from .coordinates import *
-=======
-Functions for running Monte Carlo Simulation
+Functions for running Monte Carlo Simulation by both Python Standard Library and NumPy.
 """
 import math
 import os
 import random
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 def calculate_LJ(r_ij):
     """
@@ -44,6 +34,33 @@ def calculate_LJ(r_ij):
     return pairwise_energy
 
 
+def calculate_LJ_np(r_ij):
+    """
+    The LJ interaction energy between two particles.
+    
+    Computes the pairwise Lennard Jones interaction energy based on the separation distance in reduced unites.
+    
+    Parameters
+    ----------
+    r_ij : np.array
+        The distance between the particles in reduced units.
+        
+    Returns
+    -------
+    pairwise_energy : np.array
+        The pairwise Lennard Jones interaction energy in reduced units.
+    
+    """
+    
+    r6_term = np.power(1/r_ij,6)
+    r12_term = np.power(r6_term,2)
+    
+    pairwise_energy = 4 * (r12_term - r6_term)
+    
+    return pairwise_energy
+
+
+
 
 def calculate_distance(coord1,coord2,box_length=None):
     """
@@ -64,7 +81,7 @@ def calculate_distance(coord1,coord2,box_length=None):
     """
     
     distance = 0
-    vector = [0,0,0]
+    vector = [0, 0, 0]
     
     for i in range(3):
         vector[i] = coord1[i] -coord2[i]
@@ -79,6 +96,36 @@ def calculate_distance(coord1,coord2,box_length=None):
         distance += dim_dist
         
     distance = math.sqrt(distance)
+    
+    return distance
+
+
+def calculate_distance_np(coord1, coord2, box_length = None):
+    """
+    Calculate the distance between two 3D coordinates.
+    
+    Parameters
+    ----------
+    coord1, coord2 : np.array
+        The atomic coordinates [x, y, z]
+        
+    Returns
+    -------
+    distance : float
+        The distance between the two atoms.
+    """
+    coord_dist = coord1 - coord2
+    
+    if box_length:
+            coord_dist = coord_dist - box_length * np.round(coord_dist / box_length)
+            
+    coord_dist = coord_dist ** 2
+    
+    if coord_dist.ndim < 2:
+        coord_dist = coord_dist.reshape(1, -1)
+        
+    coord_dist_sum = coord_dist.sum(axis = 1)
+    distance = np.sqrt(coord_dist_sum)
     
     return distance
 
@@ -158,7 +205,45 @@ def calculate_total_energy(coordinates, cutoff=3, box_length=None):
     return total_energy
 
 
->>>>>>> 8b7ae04fb2e189026ded888d244940c70495b7fa
+def calculate_total_energy_np(coordinates, cutoff=3, box_length=None):
+    """
+    Calculate the total Lennard Jones energy of a system of particles by NumPy.
+    
+    Parameters
+    ----------
+    coordinates : ny.array
+        NumPy array containing particle coordinates.
+        
+    cutoff : float
+        A criteria distance for intermolecular interaction truncation
+    
+    box_length : float, optional
+        The box length. This function assumes box is a cube.
+        
+    Returns
+    -------
+    total_energy : float
+        The total pairwise Lennard Jones energy of the system of particles.
+    """
+    
+    total_energy = 0
+    
+    num_atoms = len(coordinates)
+    
+    for i in range(num_atoms - 1):
+        
+        dist1 = calculate_distance_np(coordinates[i], coordinates)
+        dist2 = dist1[dist1 != 0]
+        dist3 = dist2[dist2 < cutoff]
+        
+        energy_i = calculate_LJ_np(dist3)
+        energy_i_total = energy_i.sum()
+        
+        total_energy += energy_i_total
+        
+        coordinates = coordinates[1:num_atoms] 
+        
+    return total_energy
 
 def read_xyz(filepath):
     """
@@ -192,40 +277,6 @@ def read_xyz(filepath):
             float_coords.append(float(coord))
             
         atomic_coordinates.append(float_coords)
-<<<<<<< HEAD
-        
-    
-    return atomic_coordinates, box_length
-
-def run_simulation(coordinates, box_length, cutoff, reduced_temperature, num_steps, max_displacement, freq=1000):
-    """
-    Run a Monte Carlo simulation with the specified parameters. 
-    """
-
-    # Reporting information
-    steps = []
-    energies = []
-    all_coordinates = []
-
-    # Calculated quantities
-    beta = 1/reduced_temperature
-    num_particles = len(coordinates)
-
-    # Calculated based on simulation inputs
-    total_energy = calculate_total_energy(coordinates, box_length, cutoff)
-    total_energy += calculate_tail_correction(num_particles, box_length, cutoff)
-
-
-    for step in range(num_steps):
-        
-        # 1. Randomly pick one of num_particles particles
-        random_particle = random.randrange(num_particles)
-        
-        # 2. Calculate the interaction energy of the selected particle with the system. Store this value.
-        current_energy = calculate_pair_energy(coordinates, random_particle, box_length, cutoff)
-        
-        # 3. Generate a random x, y, z displacement range (-max_displacement, max_displacement) - uniform distribution
-=======
     
     return atomic_coordinates, box_length
 
@@ -382,64 +433,100 @@ def run_simulation(coordinates, box_length, cutoff, reduced_temperature, num_ste
         current_energy = calculate_pair_energy(coordinates, random_particle, box_length, cutoff)
         
         # 3. Generate a random displacement in x, y, z directions with range (-max_displacement, max_displacement).
->>>>>>> 8b7ae04fb2e189026ded888d244940c70495b7fa
         x_rand = random.uniform(-max_displacement, max_displacement)
         y_rand = random.uniform(-max_displacement, max_displacement)
         z_rand = random.uniform(-max_displacement, max_displacement)
         
-<<<<<<< HEAD
-        # 4. Modify the coordinate of selected particle by generated displacements.
-=======
         # 4. Modify the coordinate of the selected particle by generated displacement.
->>>>>>> 8b7ae04fb2e189026ded888d244940c70495b7fa
         coordinates[random_particle][0] += x_rand
         coordinates[random_particle][1] += y_rand
         coordinates[random_particle][2] += z_rand
         
-<<<<<<< HEAD
-        # 5. Calculate the new interaction energy of moved particle, store this value.
-        proposed_energy = calculate_pair_energy(coordinates, random_particle, box_length, cutoff)
-        
-        # 6. Calculate energy change and decide if we accept the move.
-=======
         # 5. Calculate the new interaction energy of the new particle and store this value.
         proposed_energy = calculate_pair_energy(coordinates, random_particle, box_length, cutoff)
         
         # 6. Calculate energy change and decide if this move is accepted.
->>>>>>> 8b7ae04fb2e189026ded888d244940c70495b7fa
         delta_energy = proposed_energy - current_energy
         
         accept = accept_or_reject(delta_energy, beta)
         
-<<<<<<< HEAD
-        # 7. If accept, keep movement. If not revert to old position.
-        if accept:
-            total_energy += delta_energy
-        else:
-            # Move is not accepted, roll back coordinates
-=======
         # 7. If accepted, keep movement. Else, revert to the old position.
         if accept == True:
             total_energy += delta_energy
         else:
             # if rejected, roll back to the origin coordinates of the selected particle.
->>>>>>> 8b7ae04fb2e189026ded888d244940c70495b7fa
             coordinates[random_particle][0] -= x_rand
             coordinates[random_particle][1] -= y_rand
             coordinates[random_particle][2] -= z_rand
         
-<<<<<<< HEAD
-        # 8. Print the energy and store the coordinates at certain intervals
-=======
         # 8. Print the energy and store the coordinates at certain intervals.
->>>>>>> 8b7ae04fb2e189026ded888d244940c70495b7fa
         if step % freq == 0:
             print(step, total_energy/num_particles)
             steps.append(step)
             energies.append(total_energy/num_particles)
-<<<<<<< HEAD
-            all_coordinates.append(coordinates)
-=======
 
     return coordinates
->>>>>>> 8b7ae04fb2e189026ded888d244940c70495b7fa
+
+
+    def run_simulation_np(coordinates, box_length, cutoff, reduced_temperature, num_steps, max_displacement = 0.1, freq = 1000):
+    """
+    Run a Monte Carlo simulation with the specified parameters.
+    """
+    
+    # Reporting information
+    steps = []
+    energies = []
+    beta = 1 / reduced_temperature
+    num_particles = len(coordinates)
+
+
+    # Calculate based on the inputs
+    try:
+        total_energy = calculate_total_energy_np(coordinates, cutoff, box_length)
+    except ZeroDivisionError:
+        raise ZeroDivisionError("Infinite energy calculated - particles overlapping! Halting MC simulation.")
+
+    total_energy += calculate_tail_correction(cutoff, box_length, num_particles)
+
+    for step in range(num_steps):
+        
+        # 1. Randomly pick one particle in the num_particles particles.
+        random_particle = random.randrange(0,num_particles)
+        
+        # 2. Calculate the interaction energy of the selected particles with the system and store this value.
+        current_energy = calculate_pair_energy(coordinates, random_particle, box_length, cutoff)
+        
+        # 3. Generate a random displacement in x, y, z directions with range (-max_displacement, max_displacement).
+        x_rand = random.uniform(-max_displacement, max_displacement)
+        y_rand = random.uniform(-max_displacement, max_displacement)
+        z_rand = random.uniform(-max_displacement, max_displacement)
+        
+        # 4. Modify the coordinate of the selected particle by generated displacement.
+        coordinates[random_particle][0] += x_rand
+        coordinates[random_particle][1] += y_rand
+        coordinates[random_particle][2] += z_rand
+        
+        # 5. Calculate the new interaction energy of the new particle and store this value.
+        proposed_energy = calculate_pair_energy(coordinates, random_particle, box_length, cutoff)
+        
+        # 6. Calculate energy change and decide if this move is accepted.
+        delta_energy = proposed_energy - current_energy
+        
+        accept = accept_or_reject(delta_energy, beta)
+        
+        # 7. If accepted, keep movement. Else, revert to the old position.
+        if accept == True:
+            total_energy += delta_energy
+        else:
+            # if rejected, roll back to the origin coordinates of the selected particle.
+            coordinates[random_particle][0] -= x_rand
+            coordinates[random_particle][1] -= y_rand
+            coordinates[random_particle][2] -= z_rand
+        
+        # 8. Print the energy and store the coordinates at certain intervals.
+        if step % freq == 0:
+            print(step, total_energy/num_particles)
+            steps.append(step)
+            energies.append(total_energy/num_particles)
+
+    return coordinates
