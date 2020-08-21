@@ -1,3 +1,3 @@
-# Day 2 Homework
+# Day 3 Homework
 
-Put your homework for day 2 here.
+Put your homework for day 3 here.
